@@ -194,6 +194,7 @@
   <p>Reserved for future monitoring.</p>
 </div>
 
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
   // --- Tab switching ---
   function openTab(evt, tabName) {
@@ -215,115 +216,134 @@
 
   // --- Update UI ---
   function updateUI() {
-    // Power Icon (Test ON/OFF)
     const powerIcon = document.getElementById("powerIcon");
     const powerLabel = document.getElementById("powerLabel");
-    if (testRunning) {
-      powerIcon.className = "power-icon power-on";
-      powerLabel.textContent = "Test ON";
-    } else {
-      powerIcon.className = "power-icon power-off";
-      powerLabel.textContent = "Test OFF";
-    }
-
-    // Error Panel
-    const errorPanel = document.querySelector(".error-panel");
-    const errorLabel = document.getElementById("errorLabel");
-    if (errorMessage == 0) {
-      errorPanel.style.display = "none";
-    } else {
-      errorPanel.style.display = "flex";
-      switch(errorMessage) {
-        case 1: errorLabel.textContent = "Station 1 detached"; break;
-        case 2: errorLabel.textContent = "Station 2 detached"; break;
-        case 3: errorLabel.textContent = "Station 3 detached"; break;
-        case 4: errorLabel.textContent = "Station 4 detached"; break;
-        case 5: errorLabel.textContent = "Station 5 detached"; break;
-        default: errorLabel.textContent = "Unknown Error";
+    if (powerIcon && powerLabel) {
+      if (testRunning) {
+        powerIcon.className = "power-icon power-on";
+        powerLabel.textContent = "Test ON";
+      } else {
+        powerIcon.className = "power-icon power-off";
+        powerLabel.textContent = "Test OFF";
       }
     }
 
-    // Cylinder
+    const errorPanel = document.querySelector(".error-panel");
+    const errorLabel = document.getElementById("errorLabel");
+    if (errorPanel && errorLabel) {
+      if (errorMessage == 0) {
+        errorPanel.style.display = "none";
+      } else {
+        errorPanel.style.display = "flex";
+        switch(errorMessage) {
+          case 1: errorLabel.textContent = "Station 1 detached"; break;
+          case 2: errorLabel.textContent = "Station 2 detached"; break;
+          case 3: errorLabel.textContent = "Station 3 detached"; break;
+          case 4: errorLabel.textContent = "Station 4 detached"; break;
+          case 5: errorLabel.textContent = "Station 5 detached"; break;
+          default: errorLabel.textContent = "Unknown Error";
+        }
+      }
+    }
+
     const cyl = document.getElementById("cylinder");
     const cylLabel = document.getElementById("cylinderLabel");
-    if (cylinderUp) {
-      cyl.textContent = "⬆️";
-      cylLabel.textContent = "Cylinder Up";
-    } else {
-      cyl.textContent = "⬇️";
-      cylLabel.textContent = "Cylinder Down";
+    if (cyl && cylLabel) {
+      if (cylinderUp) {
+        cyl.textContent = "⬆️";
+        cylLabel.textContent = "Cylinder Up";
+      } else {
+        cyl.textContent = "⬇️";
+        cylLabel.textContent = "Cylinder Down";
+      }
     }
 
-    // Cycles
-    document.getElementById("totalCycles").textContent = totalCycles;
-    document.getElementById("currentCycle").textContent = currentCycle;
-    document.getElementById("forwardDuration").textContent = forwardDuration;
-    document.getElementById("backwardDuration").textContent = backwardDuration;
+    const totalEl = document.getElementById("totalCycles");
+    const currentEl = document.getElementById("currentCycle");
+    const forwardEl = document.getElementById("forwardDuration");
+    const backwardEl = document.getElementById("backwardDuration");
+    if (totalEl) totalEl.textContent = totalCycles;
+    if (currentEl) currentEl.textContent = currentCycle;
+    if (forwardEl) forwardEl.textContent = forwardDuration;
+    if (backwardEl) backwardEl.textContent = backwardDuration;
 
-    // Update bargraph fill
     const barFill = document.getElementById("barFill");
     const barPercent = document.getElementById("barPercent");
-    if (totalCycles > 0) {
-    const percent = Math.min(100, (currentCycle / totalCycles) * 100);
-    barFill.style.width = percent + "%";
-    barPercent.textContent = Math.round(percent) + "%";
-     } else {
-    barFill.style.width = "0%";
-     barPercent.textContent = "0%";
+    if (barFill && barPercent) {
+      if (totalCycles > 0) {
+        const percent = Math.min(100, (currentCycle / totalCycles) * 100);
+        barFill.style.width = percent + "%";
+        barPercent.textContent = Math.round(percent) + "%";
+      } else {
+        barFill.style.width = "0%";
+        barPercent.textContent = "0%";
+      }
     }
 
-    // Stations
     stations.forEach((active, idx) => {
       const el = document.getElementById(`station${idx+1}`);
-      el.className = active ? "indicator led-on" : "indicator led-off";
+      if (el) {
+        el.className = active ? "indicator led-on" : "indicator led-off";
+      }
     });
   }
 
-// --- WebSocket Setup ---
-  const gateway = `ws://${window.location.hostname}/ws`;
-  let websocket;
+  // --- MQTT Setup ---
+  const broker = "wss://test.mosquitto.org:8081"; // secure WebSocket port
+  const topic = "esp32/peyman/test";
+  let client;
 
-  function initWebSocket() {
-    console.log("Connecting to WebSocket...");
-    websocket = new WebSocket(gateway);
+  function initMQTT() {
+    console.log("Connecting to MQTT broker...");
+    client = mqtt.connect(broker);
 
-    websocket.onopen = () => {
-      console.log("WebSocket connection opened");
-    };
+    client.on("connect", () => {
+      console.log("Connected to MQTT broker");
+      client.subscribe(topic, (err) => {
+        if (err) {
+          console.error("Subscribe error:", err);
+        } else {
+          console.log("Subscribed to", topic);
+        }
+      });
+    });
 
-    websocket.onclose = () => {
-      console.log("WebSocket connection closed, retrying...");
-      setTimeout(initWebSocket, 2000); // auto-reconnect
-    };
+    client.on("message", (receivedTopic, message) => {
+      if (receivedTopic === topic) {
+        try {
+          const data = JSON.parse(message.toString());
 
-    websocket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
+          if ("testRunning" in data) testRunning = data.testRunning;
+          if ("cylinderUp" in data) cylinderUp = data.cylinderUp;
+          if ("totalCycles" in data) totalCycles = data.totalCycles;
+          if ("currentCycle" in data) currentCycle = data.currentCycle;
+          if ("forwardDuration" in data) forwardDuration = data.forwardDuration;
+          if ("backwardDuration" in data) backwardDuration = data.backwardDuration;
+          if ("stations" in data && Array.isArray(data.stations)) stations = data.stations;
+          if ("errorMessage" in data) errorMessage = data.errorMessage;
 
-        if ("testRunning" in data) testRunning = data.testRunning;
-        if ("cylinderUp" in data) cylinderUp = data.cylinderUp;
-        if ("totalCycles" in data) totalCycles = data.totalCycles;
-        if ("currentCycle" in data) currentCycle = data.currentCycle;
-        if ("forwardDuration" in data) forwardDuration = data.forwardDuration;
-        if ("backwardDuration" in data) backwardDuration = data.backwardDuration;
-        if ("stations" in data && Array.isArray(data.stations)) stations = data.stations;
-        if ("errorMessage" in data) errorMessage = data.errorMessage;
-
-        updateUI();
-      } catch (err) {
-        console.error("Invalid message:", event.data);
+          updateUI();
+        } catch (err) {
+          console.error("Invalid JSON:", message.toString());
+        }
       }
-    };
+    });
+
+    client.on("error", (err) => {
+      console.error("MQTT error:", err);
+    });
+
+    client.on("close", () => {
+      console.log("MQTT connection closed, retrying...");
+      setTimeout(initMQTT, 3000);
+    });
   }
-  
-  // --- Initialize ---
 
   // --- Initialize ---
   window.addEventListener("load", () => {
-    initWebSocket();
+    initMQTT();
     updateUI();
   });
-  </script>
 
 </body>
 </html>
