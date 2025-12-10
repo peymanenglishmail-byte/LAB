@@ -220,21 +220,21 @@
     if (string_powerIcon && string_powerLabel) {
       if (string_testRunning) {
         string_powerIcon.className = "power-icon power-on";
-        powerLabel.textContent = "Test ON";
+        string_powerLabel.textContent = "Test ON";
       } else {
         string_powerIcon.className = "power-icon power-off";
-        powerLabel.textContent = "Test OFF";
+        string_powerLabel.textContent = "Test OFF";
       }
     }
 
     const errorPanel = document.querySelector(".error-panel");
     const errorLabel = document.getElementById("errorLabel");
     if (errorPanel && errorLabel) {
-      if (errorMessage == 0) {
+      if (string_errorMessage == 0) {
         errorPanel.style.display = "none";
       } else {
         errorPanel.style.display = "flex";
-        switch(errorMessage) {
+        switch(string_errorMessage) {
           case 1: errorLabel.textContent = "Station 1 detached"; break;
           case 2: errorLabel.textContent = "Station 2 detached"; break;
           case 3: errorLabel.textContent = "Station 3 detached"; break;
@@ -279,7 +279,7 @@
       }
     }
 
-    stations.forEach((active, idx) => {
+    string_stations.forEach((active, idx) => {
       const el = document.getElementById(`station${idx+1}`);
       if (el) {
         el.className = active ? "indicator led-on" : "indicator led-off";
@@ -320,7 +320,7 @@
           if ("string_currentCycle" in data) string_currentCycle = data.string_currentCycle;
           if ("string_forwardDuration" in data) string_forwardDuration = data.string_forwardDuration;
           if ("string_backwardDuration" in data) string_backwardDuration = data.string_backwardDuration;
-          if ("string_stations" in data && Array.isArray(data.stations)) string_stations = data.string_stations;
+          if ("string_stations" in data && Array.isArray(data.string_stations)) string_stations = data.string_stations;
           if ("string_errorMessage" in data) string_errorMessage = data.string_errorMessage;
 
           updateUI();
