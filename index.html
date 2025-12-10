@@ -219,10 +219,10 @@
     const string_powerLabel = document.getElementById("string_powerLabel");
     if (string_powerIcon && string_powerLabel) {
       if (string_testRunning) {
-        powerIcon.className = "power-icon power-on";
+        string_powerIcon.className = "power-icon power-on";
         powerLabel.textContent = "Test ON";
       } else {
-        powerIcon.className = "power-icon power-off";
+        string_powerIcon.className = "power-icon power-off";
         powerLabel.textContent = "Test OFF";
       }
     }
