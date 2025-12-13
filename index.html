@@ -203,7 +203,7 @@
     evt.currentTarget.classList.add("active");
   }
 
-  // --- State variables ---
+  // --- State string variables ---
   let string_testRunning = false;
   let string_cylinderUp = false;
   let string_totalCycles = 0;
@@ -212,7 +212,20 @@
   let string_backwardDuration = 0;
   let string_stations = [false, false, false, false, false];
   let string_errorMessage = 0;
-
+//-------drain_pump_vars--------------------
+  let pmp_testRunning = false;
+  let pmp_state = false;
+  let pmp_totalCycles = 0;
+  let pmp_currentCycle = 0;
+  let pmp_on_dur = 0;
+  let pmp_off_dur = 0;
+  let pmp_sp_temp = 0 ;
+  let pmp_curr_temp = 0 ;
+  let pmp_sp_lvl = 0 ;
+  let pmp_curr_lvl = 0 ;
+  let pmp_stations = [false, false, false, false, false];
+  let pmp_errorMessage = 0;
+  
   // --- Update UI ---
   function updateUI() {
     const string_powerIcon = document.getElementById("string_powerIcon");
@@ -311,14 +324,22 @@ if (errorPanel && string_errorLabel) {
       if (receivedTopic === topic) {
         try {
           const data = JSON.parse(message.toString());
-          if ("string_tR" in data) string_testRunning = data.string_tR;
-          if ("string_cUp" in data) string_cylinderUp = data.string_cUp;
-          if ("string_totC" in data) string_totalCycles = data.string_totC;
-          if ("string_curC" in data) string_currentCycle = data.string_curC;
-          if ("string_fwd" in data) string_forwardDuration = data.string_fwd;
-          if ("string_bwd" in data) string_backwardDuration = data.string_bwd;
-          if ("string_sts" in data && Array.isArray(data.string_sts)) string_stations = data.string_sts;
-          if ("string_err" in data) string_errorMessage = data.string_err;
+          switch(data.deviceID){
+            case 1:
+             if ("string_tR" in data) string_testRunning = data.string_tR;
+             if ("string_cUp" in data) string_cylinderUp = data.string_cUp;
+             if ("string_totC" in data) string_totalCycles = data.string_totC;
+             if ("string_curC" in data) string_currentCycle = data.string_curC;
+             if ("string_fwd" in data) string_forwardDuration = data.string_fwd;
+             if ("string_bwd" in data) string_backwardDuration = data.string_bwd;
+             if ("string_sts" in data && Array.isArray(data.string_sts)) string_stations = data.string_sts;
+             if ("string_err" in data) string_errorMessage = data.string_err;
+            break;
+            case 2: 
+              
+            break;
+          }
+
           updateUI();
         } catch (err) {
           console.error("Invalid JSON:", message.toString());
